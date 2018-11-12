@@ -1,0 +1,47 @@
+{
+  "author": {
+    "name": "Silas B. Domingos",
+    "email": "hello@balmante.eti.br",
+    "url": "https://balmante.eti.br"
+  },
+  "name": "@singleware/ui-editable",
+  "description": "Singleware UI editable package.",
+  "license": "MIT",
+  "version": "1.0.12",
+  "main": "release/source/index.js",
+  "types": "release/types/index.d.ts",
+  "keywords": [
+    "editable",
+    "ui editable",
+    "user interface",
+    "shadow dom",
+    "browser"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/singleware/ui-editable"
+  },
+  "engines": {
+    "node": ">=8"
+  },
+  "dependencies": {
+    "@singleware/class": "^1.1.12",
+    "@singleware/jsx": "^1.0.16",
+    "@singleware/ui-control": "^1.1.3"
+  },
+  "devDependencies": {
+    "prettier": "^1.15.2",
+    "typescript": "^2.9.2"
+  },
+  "prettier": {
+    "printWidth": 140,
+    "tabWidth": 2,
+    "singleQuote": true,
+    "semi": true
+  },
+  "scripts": {
+    "build": "npm run make && npm run update",
+    "make": "tsc",
+    "update": "cp -Rf ./source/*.d.ts ./release/types"
+  }
+}
