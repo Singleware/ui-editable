@@ -123,13 +123,18 @@ export declare class Template<T extends Properties = Properties, V = any> extend
     private enableHandler;
     /**
      * Editor change handler.
-     * @param event Event information.
+     * @param event Event entity.
      */
     private changeHandler;
     /**
      * Start editing handler.
      */
     private editHandler;
+    /**
+     * Submit editing handler.
+     * @param event Event entity.
+     */
+    private submitHandler;
     /**
      * Conclude editing handler.
      */

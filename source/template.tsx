@@ -227,6 +227,7 @@ export class Template<T extends Properties = Properties, V = any> extends Contro
       DOM.append(DOM.clear(slot), this.editor);
       Control.setChildrenProperty(this.concludeSlot, 'disabled', this.disabled || !this.checkValidity());
       Control.setChildrenProperty(this.cancelSlot, 'disabled', this.disabled);
+      this.editor.focus();
     } else {
       throw new Error(`Editor element not provided.`);
     }
@@ -241,13 +242,9 @@ export class Template<T extends Properties = Properties, V = any> extends Contro
     this.editorWrapper.remove();
     this.updatePropertyState('editing', false);
     DOM.append(this.shadow, this.viewerWrapper);
-    const slot = Control.getChildByType(this.viewerSlot, HTMLElement);
-    if (slot) {
-      DOM.append(DOM.clear(slot), this.viewer);
-      Control.setChildrenProperty(this.editSlot, 'disabled', this.disabled);
-    } else {
-      throw new Error(`Viewer element not provided.`);
-    }
+    const slot = Control.getChildByType(this.viewerSlot, HTMLElement) as HTMLElement;
+    DOM.append(DOM.clear(slot), this.viewer);
+    Control.setChildrenProperty(this.editSlot, 'disabled', this.disabled);
   }
 
   /**
@@ -285,13 +282,13 @@ export class Template<T extends Properties = Properties, V = any> extends Contro
 
   /**
    * Editor change handler.
-   * @param event Event information.
+   * @param event Event entity.
    */
   @Class.Private()
   private changeHandler(event: Event): void {
+    this.changed = this.states.value !== this.getEditorProperty('value');
     event.stopPropagation();
     this.enableHandler();
-    this.changed = true;
   }
 
   /**
@@ -301,6 +298,19 @@ export class Template<T extends Properties = Properties, V = any> extends Contro
   private editHandler(): void {
     if (!this.disabled) {
       this.edit();
+    }
+  }
+
+  /**
+   * Submit editing handler.
+   * @param event Event entity.
+   */
+  @Class.Private()
+  private submitHandler(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.stopPropagation();
+      event.preventDefault();
+      this.concludeHandler();
     }
   }
 
@@ -336,10 +346,11 @@ export class Template<T extends Properties = Properties, V = any> extends Contro
     this.editSlot.addEventListener('click', this.editHandler.bind(this));
     this.concludeSlot.addEventListener('click', this.concludeHandler.bind(this));
     this.cancelSlot.addEventListener('click', this.cancelHandler.bind(this));
+    this.editorSlot.addEventListener('keyup', this.changeHandler.bind(this), true);
     this.editorSlot.addEventListener('change', this.changeHandler.bind(this), true);
-    this.editorSlot.addEventListener('keyup', this.enableHandler.bind(this), true);
-    this.skeleton.addEventListener('renderviewer', this.renderViewerHandler.bind(this));
-    this.skeleton.addEventListener('rendereditor', this.renderEditorHandler.bind(this));
+    this.editorSlot.addEventListener('keypress', this.submitHandler.bind(this));
+    this.skeleton.addEventListener('renderviewer', this.renderViewerHandler.bind(this) as EventListener);
+    this.skeleton.addEventListener('rendereditor', this.renderEditorHandler.bind(this) as EventListener);
   }
 
   /**
@@ -370,6 +381,7 @@ export class Template<T extends Properties = Properties, V = any> extends Contro
   @Class.Private()
   private initialRender(): void {
     this.viewer = this.renderViewer();
+    this.editor = this.renderEditor();
     this.stopEditing();
   }
 
@@ -412,17 +424,10 @@ export class Template<T extends Properties = Properties, V = any> extends Contro
    * Sets the editable value.
    */
   public set value(value: V) {
-    this.states.value = value;
-    if (this.editor) {
-      this.setEditorProperty('value', value);
-      this.enableHandler();
-    } else {
-      const slot = Control.getChildByType(this.viewerSlot, HTMLElement);
-      if (slot) {
-        this.viewer = this.renderViewer();
-        DOM.append(DOM.clear(slot), this.viewer);
-      }
-    }
+    const slot = Control.getChildByType(this.viewerSlot, HTMLElement) as HTMLElement;
+    this.setEditorProperty('value', (this.states.value = value));
+    DOM.append(DOM.clear(slot), (this.viewer = this.renderViewer()));
+    this.enableHandler();
   }
 
   /**
@@ -531,13 +536,6 @@ export class Template<T extends Properties = Properties, V = any> extends Contro
    */
   @Class.Public()
   public edit(): void {
-    if (!this.editor) {
-      this.editor = this.renderEditor();
-      this.setEditorProperty('name', this.name);
-      this.setEditorProperty('required', this.required);
-      this.setEditorProperty('readOnly', this.readOnly);
-      this.setEditorProperty('disabled', this.disabled);
-    }
     this.startEditing();
   }
 

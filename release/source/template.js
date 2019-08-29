@@ -171,6 +171,7 @@ let Template = class Template extends Control.Component {
             DOM.append(DOM.clear(slot), this.editor);
             Control.setChildrenProperty(this.concludeSlot, 'disabled', this.disabled || !this.checkValidity());
             Control.setChildrenProperty(this.cancelSlot, 'disabled', this.disabled);
+            this.editor.focus();
         }
         else {
             throw new Error(`Editor element not provided.`);
@@ -185,13 +186,8 @@ let Template = class Template extends Control.Component {
         this.updatePropertyState('editing', false);
         DOM.append(this.shadow, this.viewerWrapper);
         const slot = Control.getChildByType(this.viewerSlot, HTMLElement);
-        if (slot) {
-            DOM.append(DOM.clear(slot), this.viewer);
-            Control.setChildrenProperty(this.editSlot, 'disabled', this.disabled);
-        }
-        else {
-            throw new Error(`Viewer element not provided.`);
-        }
+        DOM.append(DOM.clear(slot), this.viewer);
+        Control.setChildrenProperty(this.editSlot, 'disabled', this.disabled);
     }
     /**
      * Render viewer handler.
@@ -222,12 +218,12 @@ let Template = class Template extends Control.Component {
     }
     /**
      * Editor change handler.
-     * @param event Event information.
+     * @param event Event entity.
      */
     changeHandler(event) {
+        this.changed = this.states.value !== this.getEditorProperty('value');
         event.stopPropagation();
         this.enableHandler();
-        this.changed = true;
     }
     /**
      * Start editing handler.
@@ -235,6 +231,17 @@ let Template = class Template extends Control.Component {
     editHandler() {
         if (!this.disabled) {
             this.edit();
+        }
+    }
+    /**
+     * Submit editing handler.
+     * @param event Event entity.
+     */
+    submitHandler(event) {
+        if (event.key === 'Enter') {
+            event.stopPropagation();
+            event.preventDefault();
+            this.concludeHandler();
         }
     }
     /**
@@ -264,8 +271,9 @@ let Template = class Template extends Control.Component {
         this.editSlot.addEventListener('click', this.editHandler.bind(this));
         this.concludeSlot.addEventListener('click', this.concludeHandler.bind(this));
         this.cancelSlot.addEventListener('click', this.cancelHandler.bind(this));
+        this.editorSlot.addEventListener('keyup', this.changeHandler.bind(this), true);
         this.editorSlot.addEventListener('change', this.changeHandler.bind(this), true);
-        this.editorSlot.addEventListener('keyup', this.enableHandler.bind(this), true);
+        this.editorSlot.addEventListener('keypress', this.submitHandler.bind(this));
         this.skeleton.addEventListener('renderviewer', this.renderViewerHandler.bind(this));
         this.skeleton.addEventListener('rendereditor', this.renderEditorHandler.bind(this));
     }
@@ -294,6 +302,7 @@ let Template = class Template extends Control.Component {
      */
     initialRender() {
         this.viewer = this.renderViewer();
+        this.editor = this.renderEditor();
         this.stopEditing();
     }
     /**
@@ -318,18 +327,10 @@ let Template = class Template extends Control.Component {
      * Sets the editable value.
      */
     set value(value) {
-        this.states.value = value;
-        if (this.editor) {
-            this.setEditorProperty('value', value);
-            this.enableHandler();
-        }
-        else {
-            const slot = Control.getChildByType(this.viewerSlot, HTMLElement);
-            if (slot) {
-                this.viewer = this.renderViewer();
-                DOM.append(DOM.clear(slot), this.viewer);
-            }
-        }
+        const slot = Control.getChildByType(this.viewerSlot, HTMLElement);
+        this.setEditorProperty('value', (this.states.value = value));
+        DOM.append(DOM.clear(slot), (this.viewer = this.renderViewer()));
+        this.enableHandler();
     }
     /**
      * Gets the default editable value.
@@ -418,13 +419,6 @@ let Template = class Template extends Control.Component {
      * Start editing.
      */
     edit() {
-        if (!this.editor) {
-            this.editor = this.renderEditor();
-            this.setEditorProperty('name', this.name);
-            this.setEditorProperty('required', this.required);
-            this.setEditorProperty('readOnly', this.readOnly);
-            this.setEditorProperty('disabled', this.disabled);
-        }
         this.startEditing();
     }
     /**
@@ -546,6 +540,9 @@ __decorate([
 __decorate([
     Class.Private()
 ], Template.prototype, "editHandler", null);
+__decorate([
+    Class.Private()
+], Template.prototype, "submitHandler", null);
 __decorate([
     Class.Private()
 ], Template.prototype, "concludeHandler", null);
